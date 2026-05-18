@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-critical: #E11D48; /* rose-600 */
+  --color-critical-bg: #FFF1F2; /* rose-50 */
+  
+  --color-moderate: #D97706; /* amber-600 */
+  --color-moderate-bg: #FFFBEB; /* amber-50 */
+  
+  --color-stable: #10B981; /* emerald-500 */
+  --color-stable-bg: #ECFDF5; /* emerald-50 */
+}
+
+@layer base {
+  *, ::before, ::after {
+    border-color: var(--color-slate-200);
+  }
+  
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-rose-200;
+  }
+  
+  label {
+    @apply block text-xs font-bold text-slate-600 mb-1.5;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]), textarea, select {
+    @apply w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 transition-shadow focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 placeholder:text-slate-400;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-300 rounded-full hover:bg-slate-400; }
+}
+
+@layer utilities {
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Patient } from '@/types'
-import { broadcastNotification } from '@/lib/notify'
+import { broadcastNotification } from '@/lib/broadcast'
 
 export function usePatients() {
   const [patients, setPatients] = useState<Patient[]>([])
