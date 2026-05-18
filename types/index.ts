@@ -108,7 +108,7 @@ export interface PredictedIntervention {
   requires_physician_order: boolean
 }
 
-export interface Prediction {
+export interface Predictions {
   id: string
   patient_id: string | null
   input_flags: string[]

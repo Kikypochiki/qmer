@@ -1,25 +1,10 @@
-import { Patient } from '@/types'
+import type { Patient, Predictions } from '@/types'
 
-export interface PredictedIntervention {
-  action: string
-  confidence: number
-  category: string
-  rationale: string
-  requires_physician_order: boolean
-}
-
-export interface Prediction {
-  patient_id: string
-  predicted_interventions: PredictedIntervention[]
-  risk_level: string
-  priority_note: string
-  model_version: string
-  predicted_at: string
-}
+export type Prediction = Predictions
 
 const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000'
 
-export async function getPrediction(patient: Patient, bustCache = false): Promise<Prediction | null> {
+export async function getPrediction(patient: Patient, bustCache = false): Promise<Predictions | null> {
   try {
     const res = await fetch(`${FASTAPI_URL}/api/predict${bustCache ? '?bust=' + Date.now() : ''}`, {
       method: 'POST',
@@ -27,12 +12,12 @@ export async function getPrediction(patient: Patient, bustCache = false): Promis
       body: JSON.stringify({
         patient_id: patient.id,
         clinical_flags: patient.clinical_flags || [],
-        chief_complaint: patient.chief_complaint,
+        chief_complaint: patient.chief_complaint ? patient.chief_complaint.join(', ') : null,
         cervix_dilation: patient.cervix_dilation,
         contraction_freq: patient.contraction_freq,
         mode_of_delivery: patient.mode_of_delivery || 'NSVD',
         gravida_para: patient.gravida_para,
-        age: patient.age,
+        age: patient.age ? String(patient.age) : null,
         historical_context: null
       })
     })

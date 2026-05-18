@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Patient } from '@/types'
 import { getPrediction, Prediction } from '@/lib/ai/predict'
 import { getProtocolsForFlags } from '@/lib/protocols'
-import { supabase } from '@/lib/supabase/client'
+import { supabase, SUPABASE_PREDICTIONS_TABLE } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, AlertTriangle, ShieldCheck, Activity, Check, X, ServerOff } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -26,8 +26,8 @@ export function PredictionPanel({ patient, onClose }: { patient: Patient, onClos
       const result = await getPrediction(patient, bustCache)
       if (result) {
         setPrediction(result)
-        // Log to ai_predictions
-        await supabase.from('ai_predictions').insert({
+        // Log to predictions table (configurable)
+        await supabase.from(SUPABASE_PREDICTIONS_TABLE).insert({
           patient_id: patient.id,
           risk_level: result.risk_level,
           priority_note: result.priority_note,
