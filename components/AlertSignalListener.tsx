@@ -37,7 +37,7 @@ export function AlertSignalListener() {
     if (!('serviceWorker' in navigator)) return
 
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type !== 'qmer-push-alert') return
+      if (event.data?.type !== 'co5mo-push-alert') return
 
       const urgency = event.data?.payload?.urgency
       if (urgency === 'high') {

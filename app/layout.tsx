@@ -16,8 +16,8 @@ const mono = DM_Mono({
 })
 
 export const metadata = {
-  title: 'QMeR+ OR/DR Companion',
-  description: 'Ormoc District Hospital OR/DR Companion System',
+  title: 'CO5MO OR/DR Companion',
+  description: 'CO5MO OR/DR Companion System',
 }
 
 export default function RootLayout({

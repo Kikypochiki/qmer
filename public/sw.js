@@ -4,7 +4,7 @@ self.addEventListener('push', (event) => {
     body: data.body ?? '',
     icon: '/icon-192.png',
     badge: '/badge-72.png',
-    tag: data.tag ?? 'qmer-notification',
+    tag: data.tag ?? 'co5mo-notification',
     renotify: true,
     data: { url: data.url ?? '/alerts' },
     requireInteraction: data.urgency === 'high',
@@ -12,12 +12,12 @@ self.addEventListener('push', (event) => {
     vibrate: data.urgency === 'high' ? [200, 100, 200] : [100],
   };
   event.waitUntil((async () => {
-    await self.registration.showNotification(data.title ?? 'QMeR+ Alert', options);
+    await self.registration.showNotification(data.title ?? 'CO5MO Alert', options);
 
     const clientsList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const client of clientsList) {
       client.postMessage({
-        type: 'qmer-push-alert',
+        type: 'co5mo-push-alert',
         payload: data,
       });
     }

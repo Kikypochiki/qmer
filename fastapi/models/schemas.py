@@ -32,4 +32,4 @@ class PushBroadcastRequest(BaseModel):
     body: str
     url: str
     urgency: str = 'normal'
-    tag: str = 'qmer-notification'
+    tag: str = 'co5mo-notification'

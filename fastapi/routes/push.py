@@ -52,4 +52,4 @@ async def broadcast_push(request: PushBroadcastRequest):
 
 @router.get("/push/health")
 async def push_health():
-    return {"status": "ok", "service": "QMeR+ Push"}
+    return {"status": "ok", "service": "CO5MO Push"}

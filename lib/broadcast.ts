@@ -14,7 +14,7 @@ export async function broadcastNotification(payload: {
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '')
-      console.error('[QMeR+ notify] local broadcast failed', response.status, errorBody)
+      console.error('[CO5MO notify] local broadcast failed', response.status, errorBody)
 
       const fastapiUrl = process.env.NEXT_PUBLIC_FASTAPI_URL
       if (fastapiUrl) {
@@ -26,12 +26,12 @@ export async function broadcastNotification(payload: {
 
         if (!fallback.ok) {
           const fallbackError = await fallback.text().catch(() => '')
-          console.error('[QMeR+ notify] fallback broadcast failed', fallback.status, fallbackError)
+          console.error('[CO5MO notify] fallback broadcast failed', fallback.status, fallbackError)
         }
       }
     }
   } catch (e) {
-    console.error('[QMeR+ notify] broadcast failed', e)
+    console.error('[CO5MO notify] broadcast failed', e)
     // Non-fatal — clinical operations must not be blocked by notification failures
   }
 }

@@ -1,11 +1,11 @@
-# QMeR+ Professional UI Enhancement Prompt
+# CO5MO Professional UI Enhancement Prompt
 ## Send this to Gemini, Claude, or your AI assistant
 
 ---
 
 ## Executive Brief
 
-You are redesigning the UI of **QMeR+**, a clinical decision-support web application for nurses at Ormoc District Hospital's Operating Room and Delivery Room unit. The application currently has functional components but lacks visual polish, professional hierarchy, and cohesive design language.
+You are redesigning the UI of **CO5MO**, a clinical decision-support web application for nurses at Ormoc District Hospital's Operating Room and Delivery Room unit. The application currently has functional components but lacks visual polish, professional hierarchy, and cohesive design language.
 
 **Constraint:** Do NOT modify business logic, data flows, hooks, API calls, or TypeScript types. This is purely a visual/UI enhancement pass. All React functionality must remain intact.
 
@@ -168,7 +168,7 @@ Format:
 ### 1. Authentication Page (`/auth`)
 - **Layout:** Desktop two-panel (left branding, right form) · mobile single column
 - **Left panel:** Dark gradient bg (linear-gradient 135deg #1A0810→#5C0D2A→#8C1540) with diagonal stripe pattern overlay (opacity 4%)
-  - Large "QMeR+" in white + italic pink "+"
+  - Large "CO5MO" in white + italic pink "+"
   - 3 feature callouts with icons (timestamp, alerts, AI)
 - **Right panel:** Centered form on page-bg, max-w-sm
   - "Welcome back" h2 + "Sign in to your account" subtitle
@@ -255,7 +255,7 @@ Format:
 - **Background:** Linear gradient 180deg (#1A0810 → #2D1020 60% → #1A0810 100%)
 - **Border-right:** 1px white/10 (subtle)
 - **Logo area:** 
-  - "QMeR" text white + italic "+" in pink-400
+  - "CO5MO" text white + italic "+" in pink-400
   - Below: "ODH Companion" small uppercase text, pink-300/60
   - Divider: 1px border white/10
 - **Nav items:**
@@ -385,4 +385,4 @@ Before approving any UI change:
 - Preserve all onClick, onChange, form submission logic
 - Do NOT rename components, props, or data structures
 
-Good luck building a beautiful, professional QMeR+ UI! 🏥✨
+Good luck building a beautiful, professional CO5MO UI! 🏥✨

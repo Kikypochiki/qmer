@@ -18,7 +18,7 @@ from routes.predict import router as predict_router
 from routes.push import router as push_router
 from routes.trends import router as trends_router
 
-app = FastAPI(title="QMeR+ Backend Service", version="1.0.0")
+app = FastAPI(title="CO5MO Backend Service", version="1.0.0")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -43,4 +43,4 @@ app.include_router(trends_router, prefix="/api")
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "service": "QMeR+ AI (Gemini)", "version": "1.0.0"}
+    return {"status": "ok", "service": "CO5MO AI (Gemini)", "version": "1.0.0"}

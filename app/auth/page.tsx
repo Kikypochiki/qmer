@@ -51,7 +51,7 @@ export default function AuthPage() {
               className="text-2xl font-bold tracking-tight m-0"
               style={{ color: 'var(--color-on-surface)' }}
             >
-              QMeR+
+              CO5MO
             </h1>
             <p 
               className="text-sm font-medium m-0 mt-1"

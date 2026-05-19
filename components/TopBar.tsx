@@ -48,7 +48,7 @@ export function TopBar() {
     if (pathname.includes('/log')) return { title: 'Active Logs', subtitle: 'Interventions' }
     if (pathname.includes('/trends')) return { title: 'Trends & Stats', subtitle: 'Analytics' }
     if (pathname.includes('/patients/')) return { title: 'Patient Profile', subtitle: 'Details' }
-    return { title: 'QMeR+', subtitle: 'Clinical System' }
+    return { title: 'CO5MO', subtitle: 'Clinical System' }
   }
 
   const { title, subtitle } = getPageTitle()

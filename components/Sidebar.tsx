@@ -41,7 +41,7 @@ export function Sidebar() {
             className="text-xl font-bold tracking-tight"
             style={{ color: 'var(--color-on-surface)' }}
           >
-            QMeR<span style={{ color: 'var(--color-primary)' }}>+</span>
+            CO5MO
           </h1>
         </div>
       </div>

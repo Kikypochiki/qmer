@@ -209,6 +209,6 @@ Return ONLY this JSON (no markdown, no extra text):
 async def health():
     return {
         "status": "ok",
-        "service": "QMeR+ AI (Groq / Llama 3.3)",
+        "service": "CO5MO AI (Groq / Llama 3.3)",
         "version": "1.0.0"
     }
