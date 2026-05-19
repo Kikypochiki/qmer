@@ -19,8 +19,8 @@ const COMMON_FLAGS = [
 export default function IntakePage() {
   const router = useRouter()
   const { session, profile } = useAuth()
-  
-// Triage Mode
+
+  // Triage Mode
   const [triageMode, setTriageMode] = useState<'Standard' | 'Emergency'>('Standard')
 
   // Live Validation Handlers
@@ -32,7 +32,9 @@ export default function IntakePage() {
   }
 
   // Demographics
-  const [name, setName] = useState('')
+  const [surname, setSurname] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [middleName, setMiddleName] = useState('')
   const [age, setAge] = useState('')
   const [sex, setSex] = useState('Female')
   const [civilStatus, setCivilStatus] = useState('Single')
@@ -57,12 +59,20 @@ export default function IntakePage() {
   const [contractionIntensity, setContractionIntensity] = useState('Mild')
   const [ieFindings, setIeFindings] = useState('')
 
+  // Admission Monitoring / Vitals
+  const [temperature, setTemperature] = useState('')
+  const [pulseRate, setPulseRate] = useState('')
+  const [respiratoryRate, setRespiratoryRate] = useState('')
+  const [bloodPressure, setBloodPressure] = useState('')
+  const [o2Sat, setO2Sat] = useState('')
+
   // Classification & Flags
   const [modeOfDelivery, setModeOfDelivery] = useState('NSVD')
   const [clinicalFlags, setClinicalFlags] = useState<string[]>([])
+  const [otherFlag, setOtherFlag] = useState('')
   const [currentWard, setCurrentWard] = useState('')
   const [notes, setNotes] = useState('')
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const getAlertLevel = () => {
@@ -86,38 +96,89 @@ export default function IntakePage() {
     setIsSubmitting(true)
 
     try {
-      const payload: Partial<Patient> = {
-          name, 
-          age: age ? parseInt(age) : null,
-          sex,
-          civil_status: civilStatus || null,
-          address: address || null,
-          height_cm: height ? parseFloat(height) : null,
-          weight_kg: weight ? parseFloat(weight) : null,
-          gravida: g ? parseInt(g) : null,
-          term: t ? parseInt(t) : null,
-          preterm: p ? parseInt(p) : null,
-          abortion: a ? parseInt(a) : null,
-          living: l ? parseInt(l) : null,
-          gravida_para: `G${g || 0}P${t || 0}`,
-          chief_complaint: chiefComplaint ? [chiefComplaint] : null, 
-          fht: fht || null,
-          cervix_dilation: cervixDilation || null,
-          contraction_freq: contractionFreq || null,
-          contraction_duration: contractionDuration || null,
-          contraction_interval: contractionInterval || null,
-          contraction_intensity: contractionIntensity as Patient['contraction_intensity'],
-          ie_findings: ieFindings || null,
-          mode_of_delivery: modeOfDelivery as Patient['mode_of_delivery'],
-          clinical_flags: clinicalFlags, 
-          notes: notes || null, 
-          alert_level: getAlertLevel(),
-          admitted_by: session.user.id,
-          current_ward: currentWard || 'ODH',
-          is_critical_admit: triageMode === 'Emergency',
-          is_transferred: false,
-          registration_complete: true
+      const computedName = `${surname}, ${firstName} ${middleName || ''}`.trim()
+      // Validate vitals
+      const tempVal = temperature ? parseFloat(temperature) : null
+      if (tempVal !== null && (isNaN(tempVal) || tempVal < 30 || tempVal > 43)) {
+        alert('Temperature must be a number between 30 and 43 °C')
+        setIsSubmitting(false)
+        return
+      }
+      const pulseVal = pulseRate ? parseInt(pulseRate) : null
+      if (pulseVal !== null && (isNaN(pulseVal) || pulseVal < 30 || pulseVal > 220)) {
+        alert('Pulse Rate must be an integer between 30 and 220 bpm')
+        setIsSubmitting(false)
+        return
+      }
+      const respVal = respiratoryRate ? parseInt(respiratoryRate) : null
+      if (respVal !== null && (isNaN(respVal) || respVal < 5 || respVal > 60)) {
+        alert('Respiratory Rate must be an integer between 5 and 60')
+        setIsSubmitting(false)
+        return
+      }
+      const o2Val = o2Sat ? parseFloat(o2Sat.toString().replace('%', '')) : null
+      if (o2Val !== null && (isNaN(o2Val) || o2Val < 50 || o2Val > 100)) {
+        alert('O2 Sat must be a number between 50 and 100')
+        setIsSubmitting(false)
+        return
+      }
+      let bpVal: string | null = null
+      if (bloodPressure && bloodPressure.trim()) {
+        const m = bloodPressure.trim().match(/^(\d{2,3})\/(\d{2,3})$/)
+        if (!m) {
+          alert('Blood Pressure must be in format Systolic/Diastolic e.g. 120/80')
+          setIsSubmitting(false)
+          return
         }
+        const sys = parseInt(m[1], 10)
+        const dia = parseInt(m[2], 10)
+        if (isNaN(sys) || isNaN(dia) || sys < 50 || sys > 250 || dia < 30 || dia > 150) {
+          alert('Blood Pressure values out of expected range')
+          setIsSubmitting(false)
+          return
+        }
+        bpVal = `${sys}/${dia}`
+      }
+      const payload: Partial<Patient> = {
+        name: computedName,
+        surname: surname || null,
+        first_name: firstName || null,
+        middle_name: middleName || null,
+        age: age ? parseInt(age) : null,
+        sex,
+        civil_status: civilStatus || null,
+        address: address || null,
+        height_cm: height ? parseFloat(height) : null,
+        weight_kg: weight ? parseFloat(weight) : null,
+        gravida: g ? parseInt(g) : null,
+        term: t ? parseInt(t) : null,
+        preterm: p ? parseInt(p) : null,
+        abortion: a ? parseInt(a) : null,
+        living: l ? parseInt(l) : null,
+        gravida_para: `G${g || 0}P${t || 0}`,
+        chief_complaint: chiefComplaint ? [chiefComplaint] : null,
+        fht: fht || null,
+        cervix_dilation: cervixDilation || null,
+        contraction_freq: contractionFreq || null,
+        contraction_duration: contractionDuration || null,
+        contraction_interval: contractionInterval || null,
+        contraction_intensity: contractionIntensity as Patient['contraction_intensity'],
+        ie_findings: ieFindings || null,
+        temperature_c: tempVal,
+        pulse_rate: pulseVal,
+        respiratory_rate: respVal,
+        blood_pressure: bpVal,
+        o2_sat: o2Val,
+        mode_of_delivery: modeOfDelivery as Patient['mode_of_delivery'],
+        clinical_flags: clinicalFlags,
+        notes: notes || null,
+        alert_level: getAlertLevel(),
+        admitted_by: session.user.id,
+        current_ward: currentWard || 'ODH',
+        is_critical_admit: triageMode === 'Emergency',
+        is_transferred: false,
+        registration_complete: true
+      }
 
       const { data, error } = await supabase
         .from('patients')
@@ -153,32 +214,30 @@ export default function IntakePage() {
             </div>
           </div>
         </CardHeader>
-        
+
         <CardBody>
           {/* Triage Mode Selector */}
           <div className="flex gap-2 mb-8 bg-slate-100 p-1.5 rounded-xl">
-            <button 
+            <button
               type="button"
               onClick={() => setTriageMode('Standard')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                triageMode === 'Standard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${triageMode === 'Standard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
             >
               Standard Intake
             </button>
-            <button 
+            <button
               type="button"
               onClick={() => setTriageMode('Emergency')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                triageMode === 'Emergency' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${triageMode === 'Emergency' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
             >
               Emergency Triage
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-10">
-            
+
             {/* Demographics */}
             <section className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2 flex items-center gap-2">
@@ -186,17 +245,21 @@ export default function IntakePage() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-2">
-                  <label>Full Name</label>
-                  <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Maria Clara" />
+                  <label>Name</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <input required type="text" value={surname} onChange={e => setSurname(e.target.value)} placeholder="Surname" />
+                    <input required type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First Name" />
+                    <input type="text" value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="Middle Name" />
+                  </div>
                 </div>
-                
+
                 {triageMode === 'Standard' && (
                   <div>
                     <label>Age</label>
                     <input required type="text" inputMode="numeric" maxLength={3} value={age} onChange={handleInt(setAge)} placeholder="e.g. 28" />
                   </div>
                 )}
-                
+
                 <div className={triageMode === 'Standard' ? "" : "md:col-span-2"}>
                   <label>Sex</label>
                   <select required value={sex} onChange={e => setSex(e.target.value)}>
@@ -205,14 +268,14 @@ export default function IntakePage() {
                     <option value="Other">Other</option>
                   </select>
                 </div>
-                
+
                 {triageMode === 'Standard' && (
                   <div className="md:col-span-2">
                     <label>Address</label>
                     <input required type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="e.g. 123 Main St, City" />
                   </div>
                 )}
-                
+
                 {triageMode === 'Standard' && (
                   <div>
                     <label>Civil Status</label>
@@ -223,7 +286,7 @@ export default function IntakePage() {
                     </select>
                   </div>
                 )}
-                
+
                 {triageMode === 'Standard' && (
                   <div className="grid grid-cols-2 gap-2 md:col-span-1">
                     <div>
@@ -251,12 +314,12 @@ export default function IntakePage() {
                     <input required type="text" inputMode="numeric" maxLength={2} value={g} onChange={handleInt(setG)} placeholder="G" />
                   </div>
                   <div>
-                    <label>Term</label>
-                    <input required type="text" inputMode="numeric" maxLength={2} value={t} onChange={handleInt(setT)} placeholder="T" />
-                  </div>
-                  <div>
                     <label>Preterm</label>
                     <input required type="text" inputMode="numeric" maxLength={2} value={p} onChange={handleInt(setP)} placeholder="P" />
+                  </div>
+                  <div>
+                    <label>Term</label>
+                    <input required type="text" inputMode="numeric" maxLength={2} value={t} onChange={handleInt(setT)} placeholder="T" />
                   </div>
                   <div>
                     <label>Abortion</label>
@@ -280,7 +343,7 @@ export default function IntakePage() {
                   <label>Chief Complaint</label>
                   <input required type="text" value={chiefComplaint} onChange={e => setChiefComplaint(e.target.value)} placeholder="e.g. Leaking bag of water since 4 AM" />
                 </div>
-                
+
                 <div>
                   <label>FHT (bpm)</label>
                   <input type="text" value={fht} onChange={e => setFht(e.target.value)} placeholder="e.g. 140" />
@@ -313,26 +376,54 @@ export default function IntakePage() {
               </div>
             </section>
 
+            {/* Admission Monitoring */}
+            <section className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <Stethoscope className="w-4 h-4" /> Admission Monitoring
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                  <label>Temperature (°C)</label>
+                  <input type="text" inputMode="decimal" value={temperature} onChange={e => setTemperature(e.target.value)} placeholder="e.g. 37.2" />
+                </div>
+                <div>
+                  <label>Pulse Rate (bpm)</label>
+                  <input type="text" inputMode="numeric" value={pulseRate} onChange={e => setPulseRate(e.target.value)} placeholder="e.g. 88" />
+                </div>
+                <div>
+                  <label>Respiratory Rate (bpm)</label>
+                  <input type="text" inputMode="numeric" value={respiratoryRate} onChange={e => setRespiratoryRate(e.target.value)} placeholder="e.g. 18" />
+                </div>
+                <div>
+                  <label>Blood Pressure</label>
+                  <input type="text" value={bloodPressure} onChange={e => setBloodPressure(e.target.value)} placeholder="e.g. 120/80" />
+                </div>
+                <div>
+                  <label>O2 Sat (%)</label>
+                  <input type="text" inputMode="decimal" value={o2Sat} onChange={e => setO2Sat(e.target.value)} placeholder="e.g. 98" />
+                </div>
+              </div>
+            </section>
+
             {/* Classification & Flags */}
             <section className="space-y-4 bg-slate-50 -mx-5 px-5 py-4 border-y border-slate-100">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 m-0 pb-2 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4" /> Classification & Flags
               </h3>
-              
+
               <div className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label>Target Delivery Mode</label>
                     <div className="flex gap-2">
                       {['NSVD', 'CS', 'Forceps', 'Vacuum'].map(mode => (
-                        <button 
-                          key={mode} type="button" 
+                        <button
+                          key={mode} type="button"
                           onClick={() => setModeOfDelivery(mode)}
-                          className={`px-4 py-2 text-sm font-bold rounded-lg transition-all flex-1 ${
-                            modeOfDelivery === mode 
-                              ? 'bg-slate-900 text-white shadow-sm' 
+                          className={`px-4 py-2 text-sm font-bold rounded-lg transition-all flex-1 ${modeOfDelivery === mode
+                              ? 'bg-slate-900 text-white shadow-sm'
                               : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                          }`}
+                            }`}
                         >
                           {mode}
                         </button>
@@ -353,6 +444,31 @@ export default function IntakePage() {
                         <Tag flagName={flag} className={clinicalFlags.includes(flag) ? 'ring-2 ring-offset-2 ring-slate-400' : 'opacity-50 hover:opacity-100'} />
                       </button>
                     ))}
+                  </div>
+                  <div className="mt-2">
+                    <label>Other condition</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Type other condition..."
+                        value={otherFlag}
+                        onChange={e => setOtherFlag(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && otherFlag.trim()) {
+                            const val = otherFlag.trim()
+                            setClinicalFlags(prev => prev.includes(val) ? prev : [...prev, val])
+                            setOtherFlag('')
+                          }
+                        }}
+                      />
+                      <Button onClick={() => {
+                        if (otherFlag.trim()) {
+                          const val = otherFlag.trim()
+                          setClinicalFlags(prev => prev.includes(val) ? prev : [...prev, val])
+                          setOtherFlag('')
+                        }
+                      }}>Add</Button>
+                    </div>
                   </div>
                 </div>
               </div>

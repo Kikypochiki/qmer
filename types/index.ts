@@ -10,6 +10,9 @@ export interface NurseProfile {
 export interface Patient {
   id: string
   name: string
+  surname: string | null
+  first_name: string | null
+  middle_name: string | null
   age: number | null
   sex: string
   address: string | null
@@ -23,6 +26,11 @@ export interface Patient {
   height_cm: number | null
   weight_kg: number | null
   bmi: number | null
+  temperature_c: number | null
+  pulse_rate: number | null
+  respiratory_rate: number | null
+  blood_pressure: string | null
+  o2_sat: number | null
   chief_complaint: string[] | null
   clinical_flags: string[]
   alert_level: 'Critical' | 'Moderate' | 'Stable'
