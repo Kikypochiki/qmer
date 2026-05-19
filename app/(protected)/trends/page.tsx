@@ -54,11 +54,17 @@ export default function TrendsPage() {
         const aggregated = Array.from(counts.entries()).map(([action, { count, category }]) => ({ action, count, category }))
           .sort((a, b) => b.count - a.count)
 
-        setTrends(prev => ({
-          ...(prev ?? { avgDelay: 0, interventions: [] }),
-          interventions: aggregated,
-          totalInterventions: rows.length
-        }))
+        // Only overwrite the server-provided trends when we actually have aggregated rows
+        if (aggregated.length > 0) {
+          setTrends(prev => ({
+            ...(prev ?? { avgDelay: 0, interventions: [] }),
+            interventions: aggregated,
+            totalInterventions: rows.length
+          }))
+        } else {
+          // keep existing trends (from getTrends) — helpful when local supabase returns no recent rows
+          console.debug('[Trends] Supabase aggregation returned no rows; keeping server trends')
+        }
       } catch (err) {
         // ignore - keep server trends fallback
         console.error('Failed to load interventions for trends:', err)
