@@ -1,13 +1,34 @@
+"use client"
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
 import { NotificationPromptWrapper } from '@/components/NotificationPromptWrapper'
-// Cache bust
+import { useAuth } from '@/hooks/useAuth'
 
 export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { session, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && !session) {
+      router.replace('/auth')
+    }
+  }, [loading, session, router])
+
+  if (loading || !session) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-sm text-slate-500">Checking session...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />

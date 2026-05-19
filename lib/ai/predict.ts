@@ -30,7 +30,7 @@ export async function getPrediction(patient: Patient, bustCache = false): Promis
   }
 }
 
-export async function getTrends(): Promise<{ interventions: any[], avgDelay: number } | null> {
+export async function getTrends(): Promise<{ interventions: any[], avgDelay: number, totalInterventions?: number, alertFatigue?: number, timestampAccuracy?: number } | null> {
   try {
     const res = await fetch(`${FASTAPI_URL}/api/trends`)
     if (!res.ok) throw new Error('Trends API failed')

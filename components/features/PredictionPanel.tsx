@@ -24,16 +24,43 @@ export function PredictionPanel({ patient, onClose }: { patient: Patient, onClos
     setOffline(false)
     try {
       const result = await getPrediction(patient, bustCache)
-      if (result) {
+        if (result) {
         setPrediction(result)
-        // Log to predictions table (configurable)
-        await supabase.from(SUPABASE_PREDICTIONS_TABLE).insert({
+        // Log to `predictions` table using the schema in `types/index.ts`.
+        const basePayload: any = {
           patient_id: patient.id,
+          input_flags: patient.clinical_flags || [],
+          input_cervix: patient.cervix_dilation || null,
+          input_mode: patient.mode_of_delivery || null,
+          predicted_interventions: result.predicted_interventions || [],
           risk_level: result.risk_level,
           priority_note: result.priority_note,
-          recommended_protocols: result.predicted_interventions.map(i => i.action)
-        })
-      } else {
+          model_version: result.model_version || 'unknown',
+          predicted_at: result.predicted_at || new Date().toISOString()
+        }
+
+        try {
+          const { error } = await supabase.from(SUPABASE_PREDICTIONS_TABLE).insert(basePayload)
+          if (error) throw error
+        } catch (err) {
+          console.error('Prediction insert failed on', SUPABASE_PREDICTIONS_TABLE, err)
+          // Try inserting to legacy table name `ai_predictions` first
+          try {
+            const { error: e2 } = await supabase.from('ai_predictions').insert(basePayload)
+            if (e2) throw e2
+          } catch (err2) {
+            console.error('Fallback insert to ai_predictions failed', err2)
+            // As a last resort, try inserting minimal fields to the configured table
+            const minimal = { patient_id: basePayload.patient_id, risk_level: basePayload.risk_level, priority_note: basePayload.priority_note, predicted_at: basePayload.predicted_at }
+            try {
+              const { error: e3 } = await supabase.from(SUPABASE_PREDICTIONS_TABLE).insert(minimal)
+              if (e3) throw e3
+            } catch (err3) {
+              console.error('Final fallback insert failed', err3)
+            }
+          }
+        }
+        } else {
         setOffline(true)
       }
     } catch (err) {

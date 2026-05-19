@@ -148,15 +148,13 @@ export function HandoffForm({ onSuccess }: { onSuccess?: () => void }) {
 
         <div>
           <label className="block text-xs font-bold text-slate-600 mb-2">Destination Room</label>
-          <select 
-            required 
-            value={destination} 
+          <input
+            required
+            value={destination}
             onChange={e => setDestination(e.target.value)}
+            placeholder="Enter destination room or unit"
             className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="">-- Select Destination --</option>
-            {ROOMS.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
+          />
         </div>
 
         <div>

@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, UserPlus, Users, AlertTriangle, LineChart, FileText, Settings, Stethoscope, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase } from '@/lib/supabase/client'
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -16,7 +15,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { profile } = useAuth()
+  const { profile, signOut } = useAuth()
 
   return (
     <aside className="w-[240px] h-screen bg-slate-50 border-r border-slate-200 fixed left-0 top-0 flex flex-col z-30 hidden md:flex">
@@ -78,8 +77,7 @@ export function Sidebar() {
             
             <button 
               onClick={async () => {
-                await supabase.auth.signOut()
-                window.location.href = '/'
+                await signOut()
               }}
               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
               title="Log out"

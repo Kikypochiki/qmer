@@ -4,17 +4,20 @@ import React, { useState, useEffect } from 'react'
 import { getTrends } from '@/lib/ai/predict'
 import { getProtocolsForFlags, PROTOCOLS } from '@/lib/protocols'
 import { supabase } from '@/lib/supabase/client'
-import { Patient } from '@/types'
-import { PredictionPanel } from '@/components/features/PredictionPanel'
+import { Patient, Predictions as PredictionType, Intervention } from '@/types'
+import { InlinePredictionPanel } from '@/components/features/InlinePredictionPanel'
 import { Button } from '@/components/ui/Button'
 import { Sparkles, BarChart3, Activity, Clock, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function TrendsPage() {
-  const [trends, setTrends] = useState<{ interventions: any[], avgDelay: number } | null>(null)
+  const [trends, setTrends] = useState<{ interventions: { action: string, count: number, category: string }[], avgDelay: number, totalInterventions?: number, alertFatigue?: number, timestampAccuracy?: number } | null>(null)
   const [patients, setPatients] = useState<Patient[]>([])
+  const [predictions, setPredictions] = useState<PredictionType[]>([])
+  const [showPredictionsList, setShowPredictionsList] = useState(false)
   const [selectedPatientId, setSelectedPatientId] = useState('')
   const [showCDSS, setShowCDSS] = useState(false)
+  const [query, setQuery] = useState('')
   const [expandedProtocol, setExpandedProtocol] = useState<string | null>(null)
   
   // Local state for checkboxes in protocols
@@ -24,13 +27,67 @@ export default function TrendsPage() {
     getTrends().then(data => {
       if (data) setTrends(data)
     })
+    // Also fetch recent interventions directly from the interventions table and aggregate
+    ;(async () => {
+      try {
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        const iso = thirtyDaysAgo.toISOString()
+        const { data: iData, error: iError } = await supabase
+          .from('interventions')
+          .select('*')
+          .gte('documented_at', iso)
+          .order('documented_at', { ascending: false })
+
+        if (iError) throw iError
+
+        const rows = (iData || []) as Intervention[]
+        const counts = new Map<string, { count: number; category: string }>()
+        for (const r of rows) {
+          const key = r.action || 'Unknown'
+          const existing = counts.get(key) || { count: 0, category: r.category || 'other' }
+          existing.count += 1
+          if (!existing.category && r.category) existing.category = r.category
+          counts.set(key, existing)
+        }
+
+        const aggregated = Array.from(counts.entries()).map(([action, { count, category }]) => ({ action, count, category }))
+          .sort((a, b) => b.count - a.count)
+
+        setTrends(prev => ({
+          ...(prev ?? { avgDelay: 0, interventions: [] }),
+          interventions: aggregated,
+          totalInterventions: rows.length
+        }))
+      } catch (err) {
+        // ignore - keep server trends fallback
+        console.error('Failed to load interventions for trends:', err)
+      }
+    })()
     supabase.from('patients').select('*').eq('is_transferred', false).then(({ data }) => {
       if (data) setPatients(data)
     })
+    // Fetch recent predictions stored in Supabase
+    supabase.from(process.env.NEXT_PUBLIC_SUPABASE_PREDICTIONS_TABLE || 'predictions')
+      .select('*')
+      .order('predicted_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setPredictions(data as PredictionType[])
+      })
   }, [])
 
   const selectedPatient = patients.find(p => p.id === selectedPatientId)
   const maxInterventionCount = trends?.interventions?.[0]?.count || 1
+
+  // Derived metrics from trends API
+  const casesAnalyzed = predictions.length || (trends?.totalInterventions ?? trends?.interventions?.reduce((s, it) => s + (it.count || 0), 0) ?? 0)
+  const avgHandoffTime = trends?.avgDelay != null ? `${trends.avgDelay} min` : '—'
+  const timestampAccuracy = trends?.timestampAccuracy != null ? `${trends.timestampAccuracy}%` : '—'
+  const alertFatigueDisplay = (() => {
+    if (trends?.alertFatigue == null) return '—'
+    const v = trends.alertFatigue
+    return `${v < 0 ? '↓ ' + Math.abs(v) + '%' : v > 0 ? '↑ ' + v + '%' : '0%'} `
+  })()
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20">
@@ -38,22 +95,55 @@ export default function TrendsPage() {
       {/* Metrics Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Cases Analyzed', value: '412', icon: Sparkles },
-          { label: 'Timestamp Accuracy', value: '96%', icon: Clock },
-          { label: 'Alert Fatigue', value: '↓ 34%', icon: Activity },
-          { label: 'Avg Handoff Time', value: '18 min', icon: BarChart3 }
+          { label: 'Cases Analyzed', value: String(casesAnalyzed), icon: Sparkles, onClick: () => setShowPredictionsList(v => !v) },
+          { label: 'Timestamp Accuracy', value: String(timestampAccuracy), icon: Clock },
+          { label: 'Alert Fatigue', value: String(alertFatigueDisplay), icon: Activity },
+          { label: 'Avg Handoff Time', value: String(avgHandoffTime), icon: BarChart3 }
         ].map((metric, i) => (
           <div key={i} className="bg-pink-50 border border-pink-100 rounded-xl p-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0">
               <metric.icon className="w-5 h-5 text-pink-500" />
             </div>
             <div>
-              <div className="text-xl font-black text-pink-900">{metric.value}</div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-pink-600">{metric.label}</div>
+              <button onClick={metric.onClick} className="text-left">
+                <div className="text-xl font-black text-pink-900">{metric.value}</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-pink-600">{metric.label}</div>
+              </button>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Predictions list when Cases Analyzed clicked */}
+      {showPredictionsList && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mt-4">
+          <h4 className="font-bold text-sm mb-3">Predictions (most recent first)</h4>
+          {predictions.length === 0 ? (
+            <p className="text-sm text-slate-500">No predictions found.</p>
+          ) : (
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {predictions.map((pred) => {
+                const patient = patients.find(p => p.id === pred.patient_id)
+                return (
+                  <div key={pred.id} className="p-3 border rounded-md bg-slate-50">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-bold">{patient ? `${patient.name}` : pred.patient_id}</div>
+                      <div className="text-xs text-slate-500">{new Date(pred.predicted_at).toLocaleString()}</div>
+                    </div>
+                    <div className="text-[11px] text-slate-700 mt-1">Risk: <span className="font-semibold">{pred.risk_level || '—'}</span></div>
+                    <div className="text-[11px] text-slate-600 mt-2">
+                      {pred.predicted_interventions?.slice(0,3).map((it, i) => (
+                        <div key={i} className="text-[11px]">• {it.action} <span className="text-[10px] text-slate-400">({it.confidence}%)</span></div>
+                      ))}
+                    </div>
+                    {pred.priority_note && <div className="text-[11px] italic text-slate-500 mt-2">"{pred.priority_note}"</div>}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
@@ -61,22 +151,49 @@ export default function TrendsPage() {
         <div className="space-y-8">
           
           {/* AI CDSS Launcher */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col max-h-[70vh]">
             <h3 className="font-bold text-slate-900 flex items-center gap-2 mb-2">
               <Sparkles className="w-5 h-5 text-pink-500" /> AI Prediction Panel
             </h3>
             <p className="text-sm text-slate-500 mb-4">Run the CDSS model to generate real-time predictive interventions based on recent assessments.</p>
             
-            <div className="space-y-4">
-              <select 
-                value={selectedPatientId} 
-                onChange={e => setSelectedPatientId(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500/20"
-              >
-                <option value="">-- Choose patient --</option>
-                {patients.map(p => <option key={p.id} value={p.id}>{p.name} ({p.current_ward})</option>)}
-              </select>
-              
+            <div className="space-y-4 overflow-y-auto flex-1 pr-1">
+              <div className="relative">
+                <input
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search patients..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500/20"
+                />
+                {query && (
+                  <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md max-h-48 overflow-y-auto">
+                    {patients.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) && !p.is_transferred).map(p => (
+                      <li key={p.id}>
+                        <button
+                          className="w-full text-left px-3 py-2 hover:bg-slate-50"
+                          onClick={() => { setSelectedPatientId(p.id); setQuery('') }}
+                        >
+                          {p.name} {p.current_ward ? `(${p.current_ward})` : ''}
+                        </button>
+                      </li>
+                    ))}
+                    {patients.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) && !p.is_transferred).length === 0 && (
+                      <li className="px-3 py-2 text-sm text-slate-500">No patients found.</li>
+                    )}
+                  </ul>
+                )}
+              </div>
+
+              {selectedPatient && (
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="inline-flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full">
+                    <span className="font-medium text-sm">{selectedPatient.name}</span>
+                    <span className="text-xs text-slate-500">{selectedPatient.current_ward}</span>
+                  </div>
+                  <button className="text-sm text-slate-500 underline" onClick={() => setSelectedPatientId('')}>Change</button>
+                </div>
+              )}
+
               <Button 
                 variant="primary" 
                 disabled={!selectedPatientId} 
@@ -85,11 +202,16 @@ export default function TrendsPage() {
               >
                 <Sparkles className="w-4 h-4" /> Generate Prediction
               </Button>
+
+              {showCDSS && selectedPatient && (
+                <InlinePredictionPanel patient={selectedPatient} onClose={() => setShowCDSS(false)} />
+              )}
             </div>
             
             <div className="mt-4 pt-4 border-t border-slate-100">
               <p className="text-[10px] text-slate-400 font-medium">Disclaimer: AI predictions supplement but do not replace clinical judgment.</p>
             </div>
+            
           </div>
 
           {/* Intervention Frequency Chart */}
@@ -208,12 +330,7 @@ export default function TrendsPage() {
         </div>
       </div>
 
-      {showCDSS && selectedPatient && (
-        <PredictionPanel 
-          patient={selectedPatient} 
-          onClose={() => setShowCDSS(false)} 
-        />
-      )}
+      
     </div>
   )
 }
